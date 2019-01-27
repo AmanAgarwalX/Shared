@@ -17,7 +17,7 @@ import LoginPage from "./app/LoginPage";
 import HomePage from "./app/HomePage";
 import firebase from "react-native-firebase";
 import config from "./config";
-import { createStackNavigator, createAppContainer } from "react-navigation";
+import { createSwitchNavigator, createAppContainer } from "react-navigation";
 
 export default class App extends Component {
   constructor(props) {
@@ -55,7 +55,7 @@ export default class App extends Component {
     };
     var InitalObject = { initialRouteName: null };
     InitalObject.initialRouteName = this.state.initialRoute;
-    const AppNavigator = createStackNavigator(NavigatorObject, InitalObject);
+    const AppNavigator = createSwitchNavigator(NavigatorObject, InitalObject);
     const AppContainer = createAppContainer(AppNavigator);
     return <AppContainer />;
   }

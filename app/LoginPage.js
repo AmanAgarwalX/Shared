@@ -15,7 +15,7 @@ import {
 import { StackActions, NavigationActions } from "react-navigation";
 import firebase from "react-native-firebase";
 import config from "../config"; // see docs/CONTRIBUTING.md for details
-
+import HomePage from "./HomePage";
 export default class LoginPage extends Component {
   constructor(props) {
     super(props);
@@ -107,7 +107,7 @@ export default class LoginPage extends Component {
     if (isSignedIn) {
       const resetAction = StackActions.reset({
         index: 0,
-        actions: [NavigationActions.navigate({ routeName: "Home" })]
+        actions: [NavigationActions.navigate({ routeName: "HomePage" })]
       });
       this.props.navigation.dispatch(resetAction);
     }
@@ -128,8 +128,28 @@ export default class LoginPage extends Component {
       const firebaseUserCredential = await firebase
         .auth()
         .signInWithCredential(credential);
+      if (firebaseUserCredential.additionalUserInfo.isNewUser) {
+        firebase
+          .database()
+          .ref("/users/" + firebaseUserCredential.user.uid)
+          .set({
+            gmail: firebaseUserCredential.user.email,
+            profile_picture:
+              firebaseUserCredential.additionalUserInfo.profile.picture,
+            locale: firebaseUserCredential.additionalUserInfo.profile.locale,
+            name: firebaseUserCredential.additionalUserInfo.profile.name,
+            created_at: Date.now()
+          });
+      } else {
+        firebase
+          .database()
+          .ref("/users/" + firebaseUserCredential.user.uid)
+          .update({ last_logged_in: Date.now() });
+      }
       this.setState({ userInfo: data, error: null });
+
       console.warn(JSON.stringify(firebaseUserCredential.user.toJSON()));
+
       this.isSignedIn();
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
