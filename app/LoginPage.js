@@ -131,8 +131,21 @@ export default class LoginPage extends Component {
       this.setState({ userInfo: data, error: null });
       console.warn(JSON.stringify(firebaseUserCredential.user.toJSON()));
       this.isSignedIn();
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // sign in was cancelled
+        Alert.alert("cancelled");
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // operation in progress already
+        Alert.alert("in progress");
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert("play services not available or outdated");
+      } else {
+        Alert.alert("Something went wrong", error.toString());
+        this.setState({
+          error
+        });
+      }
     }
   };
 
