@@ -5,28 +5,32 @@ import {
   Text,
   View,
   Alert,
-  Button
+  Button,
+  type
 } from "react-native";
 import {
   GoogleSignin,
   GoogleSigninButton,
   statusCodes
 } from "react-native-google-signin";
+import LoginPage from "./app/LoginPage";
+import HomePage from "./app/HomePage";
 import firebase from "react-native-firebase";
-import config from "./config"; // see docs/CONTRIBUTING.md for details
+import config from "./config";
+import { createStackNavigator, createAppContainer } from "react-navigation";
 
-export default class GoogleSigninSampleApp extends Component {
+export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       userInfo: null,
-      error: null
+      error: null,
+      initialRoute: null
     };
   }
-
-  async componentDidMount() {
+  async componentWillMount() {
     this._configureGoogleSignIn();
-    await this._getCurrentUser();
+    await this.isSignedIn();
   }
 
   _configureGoogleSignIn() {
@@ -36,136 +40,23 @@ export default class GoogleSigninSampleApp extends Component {
     });
   }
 
-  async _getCurrentUser() {
-    try {
-      const userInfo = await GoogleSignin.signInSilently();
-      this.setState({ userInfo, error: null });
-    } catch (error) {
-      const errorMessage =
-        error.code === statusCodes.SIGN_IN_REQUIRED
-          ? "Please sign in :)"
-          : error.message;
-      this.setState({
-        error: new Error(errorMessage)
-      });
-    }
-  }
+  isSignedIn = async () => {
+    const isSignedIn = await GoogleSignin.isSignedIn();
+    if (isSignedIn) this.setState({ initialRoute: "Home" });
+    else this.setState({ initialRoute: "Login" });
+  };
 
   render() {
-    const { userInfo } = this.state;
-
-    const body = userInfo
-      ? this.renderUserInfo(userInfo)
-      : this.renderSignInButton();
-    return (
-      <View style={[styles.container, { flex: 1 }]}>
-        {this.renderIsSignedIn()}
-        {body}
-        <Text>Hi</Text>
-      </View>
-    );
+    const NavigatorObject = {
+      Home: {
+        screen: HomePage
+      },
+      Login: { screen: LoginPage }
+    };
+    var InitalObject = { initialRouteName: null };
+    InitalObject.initialRouteName = this.state.initialRoute;
+    const AppNavigator = createStackNavigator(NavigatorObject, InitalObject);
+    const AppContainer = createAppContainer(AppNavigator);
+    return <AppContainer />;
   }
-
-  renderIsSignedIn() {
-    return (
-      <Button
-        onPress={async () => {
-          const isSignedIn = await GoogleSignin.isSignedIn();
-          Alert.alert(String(isSignedIn));
-        }}
-        title="is user signed in?"
-      />
-    );
-  }
-
-  renderUserInfo(userInfo) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 20 }}>
-          Welcome {userInfo.user.name}
-        </Text>
-        <Text>Your user info: {JSON.stringify(userInfo.user)}</Text>
-
-        <Button onPress={this._signOut} title="Log out" />
-        {this.renderError()}
-      </View>
-    );
-  }
-
-  renderSignInButton() {
-    return (
-      <View style={styles.container}>
-        <GoogleSigninButton
-          style={{ width: 212, height: 48 }}
-          size={GoogleSigninButton.Size.Standard}
-          color={GoogleSigninButton.Color.Auto}
-          onPress={this._signIn}
-        />
-        {this.renderError()}
-      </View>
-    );
-  }
-
-  renderError() {
-    const { error } = this.state;
-    if (!error) {
-      return null;
-    }
-    const text = `${error.toString()} ${error.code ? error.code : ""}`;
-    return <Text>{text}</Text>;
-  }
-
-  _signIn = async () => {
-    try {
-      // add any configuration settings here:
-      await GoogleSignin.configure();
-
-      const data = await GoogleSignin.signIn();
-
-      // create a new firebase credential with the token
-      const credential = firebase.auth.GoogleAuthProvider.credential(
-        data.idToken,
-        data.accessToken
-      );
-      // login with credential
-      const firebaseUserCredential = await firebase
-        .auth()
-        .signInWithCredential(credential);
-      this.setState({ userInfo: data, error: null });
-      console.warn(JSON.stringify(firebaseUserCredential.user.toJSON()));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  _signOut = async () => {
-    try {
-      await GoogleSignin.revokeAccess();
-      await GoogleSignin.signOut();
-
-      this.setState({ userInfo: null, error: null });
-    } catch (error) {
-      this.setState({
-        error
-      });
-    }
-  };
 }
-
-const styles = StyleSheet.create({
-  container: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F5FCFF"
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: "center",
-    margin: 10
-  },
-  instructions: {
-    textAlign: "center",
-    color: "#333333",
-    marginBottom: 5
-  }
-});

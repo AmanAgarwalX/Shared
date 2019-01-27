@@ -28,4 +28,6 @@ target 'Shared' do
 
   pod 'RNGoogleSignin', :path => '../node_modules/react-native-google-signin'
 
+  pod 'RNGestureHandler', :path => '../node_modules/react-native-gesture-handler'
+
 end
