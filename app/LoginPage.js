@@ -16,6 +16,7 @@ import { StackActions, NavigationActions } from "react-navigation";
 import firebase from "react-native-firebase";
 import config from "../config"; // see docs/CONTRIBUTING.md for details
 import HomePage from "./HomePage";
+import FileSystem from "react-native-filesystem";
 export default class LoginPage extends Component {
   constructor(props) {
     super(props);
@@ -36,7 +37,11 @@ export default class LoginPage extends Component {
       offlineAccess: false
     });
   }
-
+  async writeToFile(uid) {
+    const fileContents = uid;
+    await FileSystem.writeToFile("my-directory/my-file.txt", fileContents);
+    Alert.alert("file is written");
+  }
   async _getCurrentUser() {
     try {
       const userInfo = await GoogleSignin.signInSilently();
@@ -147,9 +152,8 @@ export default class LoginPage extends Component {
           .update({ last_logged_in: Date.now() });
       }
       this.setState({ userInfo: data, error: null });
-
+      this.writeToFile(firebaseUserCredential.user.uid);
       console.warn(JSON.stringify(firebaseUserCredential.user.toJSON()));
-
       this.isSignedIn();
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -182,7 +186,6 @@ export default class LoginPage extends Component {
     }
   };
 }
-
 const styles = StyleSheet.create({
   container: {
     justifyContent: "center",

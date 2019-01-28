@@ -12,6 +12,7 @@ import {
   GoogleSigninButton,
   statusCodes
 } from "react-native-google-signin";
+import FileSystem from "react-native-filesystem";
 import config from "../config";
 import { createStackNavigator, createAppContainer } from "react-navigation";
 import Hamburger from "../Hamburger";
@@ -41,18 +42,24 @@ class Settings extends Component {
       headerTintColor: "black"
     };
   };
+  async deleteFile() {
+    await FileSystem.delete("my-directory/my-file.txt");
+    Alert.alert("file is deleted");
+  }
   render() {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <Button onPress={this._signOut} title="Log out" />
       </View>
     );
+    //Delete the uid file
   }
   _signOut = async () => {
     try {
       await GoogleSignin.revokeAccess();
       await GoogleSignin.signOut();
       await firebase.auth().signOut();
+      this.deleteFile();
       this.props.navigation.navigate("Login");
     } catch (error) {}
   };

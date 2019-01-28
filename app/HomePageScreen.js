@@ -9,7 +9,9 @@ import {
 } from "react-native";
 import Hamburger from "../Hamburger";
 import SharedPics from "./SharedPics";
+import FileSystem from "react-native-filesystem";
 import SharedGroups from "./SharedGroups";
+import LoginPage from "./LoginPage";
 import Settings from "./Settings";
 import { createStackNavigator, createAppContainer } from "react-navigation";
 
@@ -40,11 +42,15 @@ class HomePageScreen extends Component {
       headerTintColor: "black"
     };
   };
-
+  async readFile() {
+    const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
+    Alert.alert(fileContents);
+  }
   render() {
     return (
       <View>
         <Text>Hi</Text>
+        <Button title="Hi" onPress={this.readFile} />
       </View>
     );
   }
