@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import ce.go.dai.RNAudioFloatingWidgetPackage;
 import com.benwixen.rnfilesystem.RNFileSystemPackage;
 
 import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
@@ -46,6 +47,7 @@ public class MainApplication extends Application implements ReactApplication {
     @Override
     protected List<ReactPackage> getPackages() {
       return Arrays.asList(new MainReactPackage(),
+            new RNAudioFloatingWidgetPackage(),
             new RNFileSystemPackage(), new RNGestureHandlerPackage(), new RNGoogleSigninPackage(),
           new RNFirebasePackage(),
           // add/remove these packages as appropriate
