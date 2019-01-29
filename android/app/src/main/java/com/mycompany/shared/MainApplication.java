@@ -5,6 +5,7 @@ import android.app.Application;
 
 import com.facebook.react.ReactApplication;
 import com.benwixen.rnfilesystem.RNFileSystemPackage;
+
 import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
 import co.apptailor.googlesignin.RNGoogleSigninPackage;
 import com.facebook.react.ReactNativeHost;
@@ -44,29 +45,15 @@ public class MainApplication extends Application implements ReactApplication {
     @SuppressLint("MissingPermission")
     @Override
     protected List<ReactPackage> getPackages() {
-      return Arrays.asList(
-        new MainReactPackage(),
-            new RNFileSystemPackage(),
-            new RNGestureHandlerPackage(),
-            new RNGoogleSigninPackage(),
-        new RNFirebasePackage(),
-        // add/remove these packages as appropriate
-        new RNFirebaseAdMobPackage(),
-        new RNFirebaseAnalyticsPackage(),
-        new RNFirebaseAuthPackage(),
-        new RNFirebaseRemoteConfigPackage(),
-        new RNFirebaseCrashlyticsPackage(),
-        new RNFirebaseDatabasePackage(),
-        new RNFirebaseFirestorePackage(),
-        new RNFirebaseFunctionsPackage(),
-        new RNFirebaseInstanceIdPackage(),
-        new RNFirebaseInvitesPackage(),
-        new RNFirebaseLinksPackage(),
-        new RNFirebaseMessagingPackage(),
-        new RNFirebaseNotificationsPackage(),
-        new RNFirebasePerformancePackage(),
-        new RNFirebaseStoragePackage()
-      );
+      return Arrays.asList(new MainReactPackage(),
+            new RNFileSystemPackage(), new RNGestureHandlerPackage(), new RNGoogleSigninPackage(),
+          new RNFirebasePackage(),
+          // add/remove these packages as appropriate
+          new RNFirebaseAdMobPackage(), new RNFirebaseAnalyticsPackage(), new RNFirebaseAuthPackage(),
+          new RNFirebaseRemoteConfigPackage(), new RNFirebaseCrashlyticsPackage(), new RNFirebaseDatabasePackage(),
+          new RNFirebaseFirestorePackage(), new RNFirebaseFunctionsPackage(), new RNFirebaseInstanceIdPackage(),
+          new RNFirebaseInvitesPackage(), new RNFirebaseLinksPackage(), new RNFirebaseMessagingPackage(),
+          new RNFirebaseNotificationsPackage(), new RNFirebasePerformancePackage(), new RNFirebaseStoragePackage());
     }
 
     @Override
