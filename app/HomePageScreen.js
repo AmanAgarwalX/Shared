@@ -21,12 +21,17 @@ class HomePageScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      shown: true
+      shown: false
     };
   }
   componentWillMount() {
     // this package has eventListeners that you can manage via DeviceEventEmitter;
-
+    /* var ifNew
+    const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
+    firebase.database().ref('/users/' + fileContents).once('value').then(function(snapshot) {
+       username = (snapshot.val() && snapshot.val().username) || 'Anonymous';
+      
+    });*/
     DeviceEventEmitter.addListener("onPlayPauseClicked", params => {
       alert(params.isPlaying);
       ToastAndroid.show("A pikachu appeared nearby !", ToastAndroid.SHORT);

@@ -7,4 +7,4 @@ import { name as appName } from "./app.json";
 import AudioFloatingWidget from "react-native-audio-floating-widget";
 AppRegistry.registerComponent(appName, () => App);
 
-AudioFloatingWidget.show();
+//AudioFloatingWidget.show();

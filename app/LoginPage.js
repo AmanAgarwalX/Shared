@@ -5,7 +5,10 @@ import {
   Text,
   View,
   Alert,
-  Button
+  Button,
+  Modal,
+  TouchableHighlight,
+  TextInput
 } from "react-native";
 import {
   GoogleSignin,
@@ -22,7 +25,11 @@ export default class LoginPage extends Component {
     super(props);
     this.state = {
       userInfo: null,
-      error: null
+      error: null,
+      isNew: null,
+      modalVisible: false,
+      userId: null,
+      uid: null
     };
   }
 
@@ -56,21 +63,60 @@ export default class LoginPage extends Component {
       });
     }
   }
-
+  setModalVisible(visible) {
+    this.setState({ modalVisible: visible });
+  }
   render() {
     const { userInfo } = this.state;
-
+    const { isNew } = this.state;
     const body = userInfo
       ? this.renderUserInfo(userInfo)
       : this.renderSignInButton();
     return (
       <View style={[styles.container, { flex: 1 }]}>
         {body}
+        <Modal
+          animationType="slide"
+          transparent={false}
+          visible={this.state.modalVisible}
+        >
+          <View
+            style={{
+              margin: 20,
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center"
+            }}
+          >
+            <Text>Please Input UserName</Text>
+            <TextInput
+              style={{ borderColor: "black", width: "100%" }}
+              placeholder="Type here to translate!"
+              onChangeText={userId => this.setState({ userId })}
+            />
+            <View>
+              <TouchableHighlight
+                onPress={() => {
+                  this.setModalVisible(!this.state.modalVisible);
+                  this.setUserID();
+                }}
+              >
+                <Text>Set User ID</Text>
+              </TouchableHighlight>
+            </View>
+          </View>
+        </Modal>
         <Text>Hi</Text>
       </View>
     );
   }
-
+  setUserID = async () => {
+    firebase
+      .database()
+      .ref("/users/" + this.state.uid)
+      .update({ userId: this.state.userId });
+    this.isSignedIn(this.state.uid);
+  };
   renderUserInfo(userInfo) {
     return (
       <View style={styles.container}>
@@ -107,8 +153,10 @@ export default class LoginPage extends Component {
     const text = `${error.toString()} ${error.code ? error.code : ""}`;
     return <Text>{text}</Text>;
   }
-  isSignedIn = async () => {
+  isSignedIn = async UIDGIVEN => {
     const isSignedIn = await GoogleSignin.isSignedIn();
+
+    this.writeToFile(UIDGIVEN);
     if (isSignedIn) {
       const resetAction = StackActions.reset({
         index: 0,
@@ -134,6 +182,35 @@ export default class LoginPage extends Component {
         .auth()
         .signInWithCredential(credential);
       if (firebaseUserCredential.additionalUserInfo.isNewUser) {
+        //Wait for UserId, then add new user and then send to homepage
+        this.setState({
+          isNew: true,
+          modalVisible: true,
+          uid: firebaseUserCredential.user.uid
+        });
+        firebase
+          .database()
+          .ref("/users/" + firebaseUserCredential.user.uid)
+          .set({
+            gmail: firebaseUserCredential.user.email,
+            profile_picture:
+              firebaseUserCredential.additionalUserInfo.profile.picture,
+            locale: firebaseUserCredential.additionalUserInfo.profile.locale,
+            name: firebaseUserCredential.additionalUserInfo.profile.name,
+            created_at: Date.now(),
+            userId: this.state.userId
+          });
+      } else {
+        //Update and Login Normally
+        firebase
+          .database()
+          .ref("/users/" + firebaseUserCredential.user.uid)
+          .update({ last_logged_in: Date.now() });
+        this.isSignedIn(firebaseUserCredential.user.uid);
+      }
+      /*
+      if (firebaseUserCredential.additionalUserInfo.isNewUser) {
+        this.setState({ isNew: true, modalVisible: true });
         firebase
           .database()
           .ref("/users/" + firebaseUserCredential.user.uid)
@@ -146,6 +223,7 @@ export default class LoginPage extends Component {
             created_at: Date.now()
           });
       } else {
+        this.setState({ isNew: false });
         firebase
           .database()
           .ref("/users/" + firebaseUserCredential.user.uid)
@@ -154,7 +232,7 @@ export default class LoginPage extends Component {
       this.setState({ userInfo: data, error: null });
       this.writeToFile(firebaseUserCredential.user.uid);
       console.warn(JSON.stringify(firebaseUserCredential.user.toJSON()));
-      this.isSignedIn();
+      if (!this.state.isNew) this.isSignedIn(firebaseUserCredential.user.uid);*/
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
         // sign in was cancelled
