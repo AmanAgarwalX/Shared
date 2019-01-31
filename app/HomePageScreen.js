@@ -10,6 +10,7 @@ import {
   ToastAndroid
 } from "react-native";
 import Hamburger from "../Hamburger";
+import firebase from "react-native-firebase";
 import SharedPics from "./SharedPics";
 import FileSystem from "react-native-filesystem";
 import SharedGroups from "./SharedGroups";
@@ -21,9 +22,11 @@ class HomePageScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      shown: false
+      shown: false,
+      uid: null
     };
   }
+  componentDidMount() {}
   componentWillMount() {
     // this package has eventListeners that you can manage via DeviceEventEmitter;
     /* var ifNew
@@ -32,13 +35,53 @@ class HomePageScreen extends Component {
        username = (snapshot.val() && snapshot.val().username) || 'Anonymous';
       
     });*/
-    DeviceEventEmitter.addListener("onPlayPauseClicked", params => {
-      alert(params.isPlaying);
+
+    //const fileContents = FileSystem.readFile("my-directory/my-file.txt");
+    //this.setState({ uid: fileContents });
+    this.readFile();
+    DeviceEventEmitter.addListener("onPlayPauseClicked", () => {
       ToastAndroid.show("A pikachu appeared nearby !", ToastAndroid.SHORT);
     });
 
     //please view available methods in docs
+    /*  alert(this.state.visibleNearby);
+    if (this.state.visibleNearby) {
+      this.setState({ visibleNearby: false });
+      clearInterval(this.state.intervalID._id);
+
+      ToastAndroid.show("Stopped Sharing Location", ToastAndroid.SHORT);
+    } else {
+      this.setState({ visibleNearby: true });
+      const intervalId = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(position => {
+          firebase
+            .database()
+            .ref("/users/" + this.state.uid)
+            .update({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            });
+        });
+        ToastAndroid.show(
+          "Make yourself Updated Location",
+          ToastAndroid.SHORT
+        );
+      }, 5000);
+      this.setState({ intervalID: intervalId });
+    }*/
   }
+  getLocationHandler = () => {
+    navigator.geolocation.getCurrentPosition(position => {
+      firebase
+        .database()
+        .ref("/users/" + this.state.uid)
+        .update({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          last_seen: Date.now()
+        });
+    });
+  };
   static navigationOptions = ({ navigation }) => {
     return {
       title: "Home",
@@ -62,17 +105,22 @@ class HomePageScreen extends Component {
       headerTintColor: "black"
     };
   };
-  async readFile() {
+  readFile = async () => {
     const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
-    Alert.alert(fileContents);
-  }
+    this.setState({ uid: fileContents });
+  };
   render() {
     return (
       <View>
         <Text>Hi</Text>
-        <Button title="Hi" onPress={this.readFile} />
         <Button
-          title="Close Widget"
+          title="Hi"
+          onPress={() => {
+            alert(this.state.uid);
+          }}
+        />
+        <Button
+          title="Toggle Widget"
           onPress={() => {
             if (this.state.shown) {
               AudioFloatingWidget.hide();
@@ -82,6 +130,10 @@ class HomePageScreen extends Component {
               this.setState({ shown: true });
             }
           }}
+        />
+        <Button
+          title="Show Yourself Nearby"
+          onPress={this.getLocationHandler}
         />
       </View>
     );

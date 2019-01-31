@@ -46,10 +46,8 @@ public class MainApplication extends Application implements ReactApplication {
     @SuppressLint("MissingPermission")
     @Override
     protected List<ReactPackage> getPackages() {
-      return Arrays.asList(new MainReactPackage(),
-            new RNAudioFloatingWidgetPackage(),
-            new RNFileSystemPackage(), new RNGestureHandlerPackage(), new RNGoogleSigninPackage(),
-          new RNFirebasePackage(),
+      return Arrays.asList(new MainReactPackage(), new RNAudioFloatingWidgetPackage(), new RNFileSystemPackage(),
+          new RNGestureHandlerPackage(), new RNGoogleSigninPackage(), new RNFirebasePackage(),
           // add/remove these packages as appropriate
           new RNFirebaseAdMobPackage(), new RNFirebaseAnalyticsPackage(), new RNFirebaseAuthPackage(),
           new RNFirebaseRemoteConfigPackage(), new RNFirebaseCrashlyticsPackage(), new RNFirebaseDatabasePackage(),
