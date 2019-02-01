@@ -7,8 +7,10 @@ import {
   Alert,
   Button,
   DeviceEventEmitter,
-  ToastAndroid
+  ToastAndroid,
+  PermissionsAndroid
 } from "react-native";
+import { initiate, show } from "./floating";
 import Hamburger from "../Hamburger";
 import firebase from "react-native-firebase";
 import SharedPics from "./SharedPics";
@@ -16,17 +18,28 @@ import FileSystem from "react-native-filesystem";
 import SharedGroups from "./SharedGroups";
 import LoginPage from "./LoginPage";
 import Settings from "./Settings";
-import AudioFloatingWidget from "react-native-audio-floating-widget";
+//import AudioFloatingWidget from "react-native-audio-floating-widget";
 import { createStackNavigator, createAppContainer } from "react-navigation";
+var isOn = false;
+const OnOff = async () => {
+  isOn = !isOn;
+  ToastAndroid.show(String(isOn), ToastAndroid.SHORT);
+  console.log(isOn);
+};
+AppRegistry.registerHeadlessTask("OnOff", () => OnOff);
 class HomePageScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
       shown: false,
-      uid: null
+      uid: null,
+      isOn: false
     };
   }
-  componentDidMount() {}
+  componentDidMount() {
+    this.requestFilePermission();
+    initiate();
+  }
   componentWillMount() {
     // this package has eventListeners that you can manage via DeviceEventEmitter;
     /* var ifNew
@@ -39,8 +52,8 @@ class HomePageScreen extends Component {
     //const fileContents = FileSystem.readFile("my-directory/my-file.txt");
     //this.setState({ uid: fileContents });
     this.readFile();
-    DeviceEventEmitter.addListener("onPlayPauseClicked", () => {
-      ToastAndroid.show("A pikachu appeared nearby !", ToastAndroid.SHORT);
+    DeviceEventEmitter.addListener("onPlayPauseClicked", params => {
+      //   ToastAndroid.show(String(this.state.isOn), ToastAndroid.SHORT);
     });
 
     //please view available methods in docs
@@ -105,9 +118,54 @@ class HomePageScreen extends Component {
       headerTintColor: "black"
     };
   };
+
   readFile = async () => {
     const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
     this.setState({ uid: fileContents });
+  };
+  requestFilePermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        {
+          title: "File Access Permission",
+          message:
+            "Cool Photo App needs access to your camera " +
+            "so you can take awesome pictures.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK"
+        }
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log("You can use the camera");
+      } else {
+        console.log("Camera permission denied");
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        {
+          title: "Another File Access Permission",
+          message:
+            "Cool Photo App needs access to your camera " +
+            "so you can take awesome pictures.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK"
+        }
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log("You can use the camera");
+      } else {
+        console.log("Camera permission denied");
+      }
+    } catch (err) {
+      console.warn(err);
+    }
   };
   render() {
     return (
@@ -123,10 +181,10 @@ class HomePageScreen extends Component {
           title="Toggle Widget"
           onPress={() => {
             if (this.state.shown) {
-              AudioFloatingWidget.hide();
+              //     AudioFloatingWidget.hide();
               this.setState({ shown: false });
             } else {
-              AudioFloatingWidget.show();
+              show();
               this.setState({ shown: true });
             }
           }}
@@ -146,4 +204,5 @@ const HomePageNavigator = createStackNavigator(
   },
   { initialRouteName: "HomePage" }
 );
+
 export default HomePageNavigator;

@@ -42,6 +42,7 @@ public class MainActivity extends ReactActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         Context context = this;
         AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
         builder1.setMessage("We need your permission for displaying the widget");

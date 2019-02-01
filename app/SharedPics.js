@@ -5,7 +5,11 @@ import {
   Text,
   View,
   Alert,
-  Button
+  Button,
+  CameraRoll,
+  PermissionsAndroid,
+  ScrollView,
+  Image
 } from "react-native";
 import { createStackNavigator, createAppContainer } from "react-navigation";
 import Hamburger from "../Hamburger";
@@ -33,10 +37,46 @@ class SharedPics extends Component {
       headerTintColor: "black"
     };
   };
+  constructor(props) {
+    super(props);
+    this.state = {
+      photos: []
+    };
+  }
+  _handleButtonPress = () => {
+    CameraRoll.getPhotos({
+      first: 20,
+      assetType: "All"
+    })
+      .then(r => {
+        this.setState({ photos: r.edges });
+        this.state.photos.forEach(function(element) {
+          console.log(element.node.timestamp);
+        });
+      })
+      .catch(err => {
+        //Error Loading Images
+      });
+  };
+
   render() {
     return (
       <View style={{ flex: 1 }}>
-        <Text>HiHello</Text>
+        <Button title="Load Images" onPress={this._handleButtonPress} />
+        <ScrollView>
+          {this.state.photos.map((p, i) => {
+            return (
+              <Image
+                key={i}
+                style={{
+                  width: 300,
+                  height: 100
+                }}
+                source={{ uri: p.node.image.uri }}
+              />
+            );
+          })}
+        </ScrollView>
       </View>
     );
   }

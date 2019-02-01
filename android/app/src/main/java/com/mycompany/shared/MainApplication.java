@@ -2,9 +2,9 @@ package com.mycompany.shared;
 
 import android.annotation.SuppressLint;
 import android.app.Application;
-
+import com.floatingwidget.floating.FloatingPackage;
 import com.facebook.react.ReactApplication;
-import ce.go.dai.RNAudioFloatingWidgetPackage;
+//import ce.go.dai.RNAudioFloatingWidgetPackage;
 import com.benwixen.rnfilesystem.RNFileSystemPackage;
 
 import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
@@ -46,8 +46,8 @@ public class MainApplication extends Application implements ReactApplication {
     @SuppressLint("MissingPermission")
     @Override
     protected List<ReactPackage> getPackages() {
-      return Arrays.asList(new MainReactPackage(), new RNAudioFloatingWidgetPackage(), new RNFileSystemPackage(),
-          new RNGestureHandlerPackage(), new RNGoogleSigninPackage(), new RNFirebasePackage(),
+      return Arrays.asList(new MainReactPackage(), /* new RNAudioFloatingWidgetPackage(), */ new RNFileSystemPackage(),
+          new RNGestureHandlerPackage(), new RNGoogleSigninPackage(), new RNFirebasePackage(), new FloatingPackage(),
           // add/remove these packages as appropriate
           new RNFirebaseAdMobPackage(), new RNFirebaseAnalyticsPackage(), new RNFirebaseAuthPackage(),
           new RNFirebaseRemoteConfigPackage(), new RNFirebaseCrashlyticsPackage(), new RNFirebaseDatabasePackage(),
