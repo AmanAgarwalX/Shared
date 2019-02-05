@@ -189,23 +189,54 @@ export default class LoginPage extends Component {
           uid: firebaseUserCredential.user.uid
         });
         firebase
-          .database()
-          .ref("/users/" + firebaseUserCredential.user.uid)
-          .set({
-            gmail: firebaseUserCredential.user.email,
-            profile_picture:
-              firebaseUserCredential.additionalUserInfo.profile.picture,
-            locale: firebaseUserCredential.additionalUserInfo.profile.locale,
-            name: firebaseUserCredential.additionalUserInfo.profile.name,
-            created_at: Date.now(),
-            userId: this.state.userId
+          .messaging()
+          .getToken()
+          .then(fcmToken => {
+            if (fcmToken) {
+              // user has a device token
+              firebase
+                .database()
+                .ref("/users/" + firebaseUserCredential.user.uid)
+                .set({
+                  gmail: firebaseUserCredential.user.email,
+                  profile_picture:
+                    firebaseUserCredential.additionalUserInfo.profile.picture,
+                  locale:
+                    firebaseUserCredential.additionalUserInfo.profile.locale,
+                  name: firebaseUserCredential.additionalUserInfo.profile.name,
+                  created_at: Date.now(),
+                  userId: this.state.userId,
+                  token: fcmToken
+                });
+            } else {
+              // user doesn't have a device token yet
+              firebase
+                .database()
+                .ref("/users/" + firebaseUserCredential.user.uid)
+                .set({
+                  gmail: firebaseUserCredential.user.email,
+                  profile_picture:
+                    firebaseUserCredential.additionalUserInfo.profile.picture,
+                  locale:
+                    firebaseUserCredential.additionalUserInfo.profile.locale,
+                  name: firebaseUserCredential.additionalUserInfo.profile.name,
+                  created_at: Date.now(),
+                  userId: this.state.userId,
+                  token: null
+                });
+            }
           });
       } else {
         //Update and Login Normally
         firebase
-          .database()
-          .ref("/users/" + firebaseUserCredential.user.uid)
-          .update({ last_logged_in: Date.now() });
+          .messaging()
+          .getToken()
+          .then(fcmToken => {
+            firebase
+              .database()
+              .ref("/users/" + firebaseUserCredential.user.uid)
+              .update({ token: fcmToken, last_logged_in: Date.now() });
+          });
         this.isSignedIn(firebaseUserCredential.user.uid);
       }
       /*

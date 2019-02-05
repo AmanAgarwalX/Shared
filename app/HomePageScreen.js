@@ -33,55 +33,41 @@ class HomePageScreen extends Component {
     this.state = {
       shown: false,
       uid: null,
-      isOn: false
+      isOn: false,
+      textContent: null
     };
   }
+  mountedComponent = async () => {
+    const uid = await this.readFile();
+    this.setState({ uid });
+  };
   componentDidMount() {
     this.requestFilePermission();
     initiate();
+    this.notificationListener = firebase
+      .notifications()
+      .onNotification(notification => {
+        // Process your notification as required
+        alert(notification.body);
+      });
+    this.onTokenRefreshListener = firebase
+      .messaging()
+      .onTokenRefresh(fcmToken => {
+        console.log("done");
+        firebase
+          .database()
+          .ref("/users/" + this.state.uid)
+          .update({ token: fcmToken });
+      });
   }
   componentWillMount() {
-    // this package has eventListeners that you can manage via DeviceEventEmitter;
-    /* var ifNew
-    const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
-    firebase.database().ref('/users/' + fileContents).once('value').then(function(snapshot) {
-       username = (snapshot.val() && snapshot.val().username) || 'Anonymous';
-      
-    });*/
-
-    //const fileContents = FileSystem.readFile("my-directory/my-file.txt");
-    //this.setState({ uid: fileContents });
-    this.readFile();
+    this.mountedComponent();
     DeviceEventEmitter.addListener("onPlayPauseClicked", params => {
       //   ToastAndroid.show(String(this.state.isOn), ToastAndroid.SHORT);
     });
-
-    //please view available methods in docs
-    /*  alert(this.state.visibleNearby);
-    if (this.state.visibleNearby) {
-      this.setState({ visibleNearby: false });
-      clearInterval(this.state.intervalID._id);
-
-      ToastAndroid.show("Stopped Sharing Location", ToastAndroid.SHORT);
-    } else {
-      this.setState({ visibleNearby: true });
-      const intervalId = setInterval(() => {
-        navigator.geolocation.getCurrentPosition(position => {
-          firebase
-            .database()
-            .ref("/users/" + this.state.uid)
-            .update({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            });
-        });
-        ToastAndroid.show(
-          "Make yourself Updated Location",
-          ToastAndroid.SHORT
-        );
-      }, 5000);
-      this.setState({ intervalID: intervalId });
-    }*/
+  }
+  componentWillUnmount() {
+    this.onTokenRefreshListener();
   }
   getLocationHandler = () => {
     navigator.geolocation.getCurrentPosition(position => {
@@ -121,7 +107,9 @@ class HomePageScreen extends Component {
 
   readFile = async () => {
     const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
-    this.setState({ uid: fileContents });
+    return new Promise(resolve => {
+      resolve(fileContents);
+    });
   };
   requestFilePermission = async () => {
     try {
@@ -193,6 +181,7 @@ class HomePageScreen extends Component {
           title="Show Yourself Nearby"
           onPress={this.getLocationHandler}
         />
+        <Text>{this.state.textContent}</Text>
       </View>
     );
   }

@@ -5,7 +5,8 @@ import {
   Text,
   View,
   Alert,
-  Button
+  Button,
+  ScrollView
 } from "react-native";
 import FileSystem from "react-native-filesystem";
 import firebase from "react-native-firebase";
@@ -44,25 +45,64 @@ export default class SharedGroupsScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      uid: null
+      uid: null,
+      groups: []
     };
   }
   createGroup = () => {
     this.props.navigation.navigate("CreateNewGroups");
   };
   componentWillMount() {
-    this.readFile();
+    this.doThings();
   }
+  doThings = async () => {
+    const uid = await this.readFile();
+    this.setState({ uid });
+  };
   readFile = async () => {
     const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
-    this.setState({ uid: fileContents });
+    return new Promise(resolve => {
+      resolve(fileContents);
+    });
   };
-
+  displayGroups = async () => {
+    await this.getGroups();
+  };
+  getGroups = async () => {
+    console.log(this.state.uid);
+    var groups = [];
+    return firebase
+      .database()
+      .ref("/users/" + this.state.uid + "/groups/")
+      .on("child_added", snap => {
+        firebase
+          .database()
+          .ref("/groups/")
+          .child(snap.key)
+          .on("value", childSnap => {
+            console.log("1", childSnap.val());
+            groups = groups.concat(childSnap.val());
+            console.log(groups);
+            this.setState({ groups });
+          });
+        //  groups.push(group);
+      });
+  };
   render() {
     return (
-      <View style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }}>
         <Text>groups</Text>
-      </View>
+        {this.state.groups.map(group => (
+          <View style={{ flexDirection: "row" }}>
+            <Text style={{ marginTop: 5 }}>
+              {" "}
+              {group.name}
+              {`\n`}
+            </Text>
+          </View>
+        ))}
+        <Button title="Get Groups" onPress={this.displayGroups} />
+      </ScrollView>
     );
   }
 }
