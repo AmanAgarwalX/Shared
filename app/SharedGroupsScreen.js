@@ -6,7 +6,9 @@ import {
   View,
   Alert,
   Button,
-  ScrollView
+  ScrollView,
+  Modal,
+  ToastAndroid
 } from "react-native";
 import FileSystem from "react-native-filesystem";
 import firebase from "react-native-firebase";
@@ -66,6 +68,7 @@ export default class SharedGroupsScreen extends Component {
     });
   };
   displayGroups = async () => {
+    this.setState({ groups: [] });
     await this.getGroups();
   };
   getGroups = async () => {
@@ -81,7 +84,8 @@ export default class SharedGroupsScreen extends Component {
           .child(snap.key)
           .on("value", childSnap => {
             console.log("1", childSnap.val());
-            groups = groups.concat(childSnap.val());
+            let val = childSnap.val();
+            groups = groups.concat({ val, visible: false });
             console.log(groups);
             this.setState({ groups });
           });
@@ -92,15 +96,89 @@ export default class SharedGroupsScreen extends Component {
     return (
       <ScrollView style={{ flex: 1 }}>
         <Text>groups</Text>
-        {this.state.groups.map(group => (
-          <View style={{ flexDirection: "row" }}>
-            <Text style={{ marginTop: 5 }}>
-              {" "}
-              {group.name}
-              {`\n`}
-            </Text>
-          </View>
-        ))}
+        {this.state.groups != undefined &&
+          this.state.groups.map((group, index) => {
+            return (
+              <View style={{ flexDirection: "row" }}>
+                <Text
+                  style={{ marginTop: 5 }}
+                  onPress={() => {
+                    let temp = this.state.groups;
+                    temp[index].visible = true;
+                    this.setState({ groups: temp });
+                    console.log(group.val.name);
+                  }}
+                >
+                  {" "}
+                  {group.val.name}
+                  {`\n`}
+                </Text>
+                <Modal
+                  animationType="slide"
+                  transparent={false}
+                  visible={this.state.groups[index].visible}
+                  onRequestClose={() => {
+                    let temp = this.state.groups;
+                    temp[index].visible = false;
+                    this.setState({ groups: temp });
+                  }}
+                >
+                  <View
+                    style={{
+                      flex: 1,
+                      alignContent: "center",
+                      justifyContent: "center",
+                      fontSize: 20
+                    }}
+                  >
+                    <Text>
+                      Group Name:
+                      {`\n`}
+                      {group.val.name}
+                      {`\n`}
+                    </Text>
+                    <Text>
+                      Group Admin:
+                      {`\n`}
+                      {group.val.admin}
+                      {`\n`}
+                    </Text>
+                    <Text>
+                      Group Members:
+                      {`\n`}
+                      {group.val.members}
+                      {`\n`}
+                    </Text>
+                    <Button
+                      title="Delete Group"
+                      onPress={() => {
+                        firebase
+                          .database()
+                          .ref(
+                            "/users/" +
+                              this.state.uid +
+                              "/groups/" +
+                              group.val.key
+                          )
+                          .set(null)
+                          .then(() => {
+                            let temp = this.state.groups;
+                            temp[index].visible = false;
+                            this.setState({ groups: temp });
+                            ToastAndroid.show(
+                              "Deleted Group",
+                              ToastAndroid.SHORT
+                            );
+                            this.setState({ groups: undefined });
+                            this.displayGroups();
+                          });
+                      }}
+                    />
+                  </View>
+                </Modal>
+              </View>
+            );
+          })}
         <Button title="Get Groups" onPress={this.displayGroups} />
       </ScrollView>
     );

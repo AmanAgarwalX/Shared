@@ -15,16 +15,32 @@ import {
 } from "react-native-google-signin";
 import LoginPage from "./app/LoginPage";
 import HomePage from "./app/HomePage";
-import firebase from "react-native-firebase";
+import { createStore, applyMiddleware } from "redux";
 import config from "./config";
+import { Provider } from "react-redux";
+import thunk from "redux-thunk";
 import { createSwitchNavigator, createAppContainer } from "react-navigation";
+const initialState = {
+  test: 0,
+  uid: null
+};
+const reducer = (state = initialState, action) => {
+  switch (action.type) {
+    case "INCREASE_TEST":
+      return { ...state, test: state.test + 1 };
+    case "SET_UID":
+      console.log("Called", action.uid);
+      return { ...state, uid: action.uid };
+  }
+  return state;
+};
 
-export default class App extends Component {
+const store = createStore(reducer, applyMiddleware(thunk));
+
+class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      userInfo: null,
-      error: null,
       initialRoute: null
     };
   }
@@ -57,6 +73,11 @@ export default class App extends Component {
     InitalObject.initialRouteName = this.state.initialRoute;
     const AppNavigator = createSwitchNavigator(NavigatorObject, InitalObject);
     const AppContainer = createAppContainer(AppNavigator);
-    return <AppContainer />;
+    return (
+      <Provider store={store}>
+        <AppContainer />
+      </Provider>
+    );
   }
 }
+export default App;

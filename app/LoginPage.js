@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import {
-  AppRegistry,
   StyleSheet,
   Text,
   View,
@@ -15,12 +14,12 @@ import {
   GoogleSigninButton,
   statusCodes
 } from "react-native-google-signin";
+import { connect } from "react-redux";
 import { StackActions, NavigationActions } from "react-navigation";
 import firebase from "react-native-firebase";
-import config from "../config"; // see docs/CONTRIBUTING.md for details
-import HomePage from "./HomePage";
+import config from "../config";
 import FileSystem from "react-native-filesystem";
-export default class LoginPage extends Component {
+class LoginPage extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -35,7 +34,7 @@ export default class LoginPage extends Component {
 
   async componentDidMount() {
     this._configureGoogleSignIn();
-    await this._getCurrentUser();
+    //   await this._getCurrentUser();
   }
 
   _configureGoogleSignIn() {
@@ -49,7 +48,7 @@ export default class LoginPage extends Component {
     await FileSystem.writeToFile("my-directory/my-file.txt", fileContents);
     Alert.alert("file is written");
   }
-  async _getCurrentUser() {
+  /* async _getCurrentUser() {
     try {
       const userInfo = await GoogleSignin.signInSilently();
       this.setState({ userInfo, error: null });
@@ -62,16 +61,17 @@ export default class LoginPage extends Component {
         error: new Error(errorMessage)
       });
     }
-  }
+  }*/
   setModalVisible(visible) {
     this.setState({ modalVisible: visible });
   }
   render() {
+    console.log(this.props.uid);
     const { userInfo } = this.state;
     const { isNew } = this.state;
-    const body = userInfo
+    const body = /*userInfo
       ? this.renderUserInfo(userInfo)
-      : this.renderSignInButton();
+      :*/ this.renderSignInButton();
     return (
       <View style={[styles.container, { flex: 1 }]}>
         {body}
@@ -106,7 +106,8 @@ export default class LoginPage extends Component {
             </View>
           </View>
         </Modal>
-        <Text>Hi</Text>
+        <Text>{this.props.test}</Text>
+        <Button title="increase" onPress={() => this.props.increaseTest()} />
       </View>
     );
   }
@@ -117,7 +118,7 @@ export default class LoginPage extends Component {
       .update({ userId: this.state.userId });
     this.isSignedIn(this.state.uid);
   };
-  renderUserInfo(userInfo) {
+  /* renderUserInfo(userInfo) {
     return (
       <View style={styles.container}>
         <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 20 }}>
@@ -130,7 +131,7 @@ export default class LoginPage extends Component {
       </View>
     );
   }
-
+*/
   renderSignInButton() {
     return (
       <View style={styles.container}>
@@ -165,6 +166,7 @@ export default class LoginPage extends Component {
       this.props.navigation.dispatch(resetAction);
     }
   };
+
   _signIn = async () => {
     try {
       // add any configuration settings here:
@@ -181,6 +183,8 @@ export default class LoginPage extends Component {
       const firebaseUserCredential = await firebase
         .auth()
         .signInWithCredential(credential);
+      let uid = firebaseUserCredential.user.uid;
+      this.props.setUID(uid);
       if (firebaseUserCredential.additionalUserInfo.isNewUser) {
         //Wait for UserId, then add new user and then send to homepage
         this.setState({
@@ -188,6 +192,7 @@ export default class LoginPage extends Component {
           modalVisible: true,
           uid: firebaseUserCredential.user.uid
         });
+
         firebase
           .messaging()
           .getToken()
@@ -206,7 +211,8 @@ export default class LoginPage extends Component {
                   name: firebaseUserCredential.additionalUserInfo.profile.name,
                   created_at: Date.now(),
                   userId: this.state.userId,
-                  token: fcmToken
+                  token: fcmToken,
+                  sharing_with: 0
                 });
             } else {
               // user doesn't have a device token yet
@@ -222,7 +228,8 @@ export default class LoginPage extends Component {
                   name: firebaseUserCredential.additionalUserInfo.profile.name,
                   created_at: Date.now(),
                   userId: this.state.userId,
-                  token: null
+                  token: null,
+                  sharing_with: 0
                 });
             }
           });
@@ -239,6 +246,7 @@ export default class LoginPage extends Component {
           });
         this.isSignedIn(firebaseUserCredential.user.uid);
       }
+
       /*
       if (firebaseUserCredential.additionalUserInfo.isNewUser) {
         this.setState({ isNew: true, modalVisible: true });
@@ -295,6 +303,22 @@ export default class LoginPage extends Component {
     }
   };
 }
+function mapStateToProps(state) {
+  return {
+    test: state.test,
+    uid: state.uid
+  };
+}
+function mapDispatchToProps(dispatch) {
+  return {
+    increaseTest: () => dispatch({ type: "INCREASE_TEST" }),
+    setUID: uid => dispatch({ type: "SET_UID", uid })
+  };
+}
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(LoginPage);
 const styles = StyleSheet.create({
   container: {
     justifyContent: "center",

@@ -6,3 +6,18 @@ export const initiate = () => {
 export const show = () => {
   NativeModules.Floating.show();
 };
+export const togglepause = () => {
+  NativeModules.Floating.togglepause();
+};
+
+export const hide = () => {
+  NativeModules.Floating.hide();
+};
+
+export const isShown = () => {
+  return new Promise(resolve => {
+    NativeModules.Floating.isShown(response => {
+      resolve(response);
+    });
+  });
+};
