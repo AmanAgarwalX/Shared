@@ -3,6 +3,9 @@ package com.floatingwidget.floating;
 import android.content.Intent;
 
 import com.mycompany.shared.service.onoffservice;
+import com.mycompany.shared.service.offservice;
+import com.mycompany.shared.service.leftservice;
+import com.mycompany.shared.service.rightservice;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -39,13 +42,19 @@ public class FloatingModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void initiate() {
         widget = new AudioWidget.Builder(reactContext)
-                .playlistDrawable(reactContext.getResources().getDrawable(R.drawable.aw_ic_play))
-                .defaultAlbumDrawable(reactContext.getResources().getDrawable(R.drawable.aw_ic_play)).build();
+                .playlistDrawable(reactContext.getResources().getDrawable(R.drawable.aw_ic_play1))
+                .defaultAlbumDrawable(reactContext.getResources().getDrawable(R.drawable.aw_ic_play2)).build();
     }
 
     @Override
     public String getName() {
         return TAG;
+    }
+
+    @ReactMethod
+    public void togglepause() {
+        isPlaying = false;
+        widget.controller().pause();
     }
 
     @ReactMethod
@@ -58,6 +67,7 @@ public class FloatingModule extends ReactContextBaseJavaModule {
         widget.show(100, 100); // Top Left Corner
 
         // media buttons' click listener
+
         widget.controller().onControlsClickListener(new AudioWidget.OnControlsClickListener() {
 
             @Override
@@ -69,29 +79,36 @@ public class FloatingModule extends ReactContextBaseJavaModule {
                 return true;
             }
 
+            Intent myIntentOn = new Intent(reactContext.getApplicationContext(), onoffservice.class);
+            Intent myIntentOff = new Intent(reactContext.getApplicationContext(), offservice.class);
+            Intent myIntentLeft = new Intent(reactContext.getApplicationContext(), leftservice.class);
+            Intent myIntentRight = new Intent(reactContext.getApplicationContext(), rightservice.class);
+
             @Override
             public void onPreviousClicked() {
                 // previous track button clicked
                 WritableMap params = Arguments.createMap();
+                reactContext.getApplicationContext().startService(myIntentLeft);
+                HeadlessJsTaskService.acquireWakeLockNow(reactContext.getApplicationContext());
                 sendEvent(reactContext, "onPreviousClicked", params);
             }
-
-            Intent myIntent = new Intent(reactContext.getApplicationContext(), onoffservice.class);
 
             @Override
             public boolean onPlayPauseClicked() {
                 // return true to change playback state of widget and play button click
                 // animation (in collapsed state)
-                reactContext.getApplicationContext().startService(myIntent);
-                HeadlessJsTaskService.acquireWakeLockNow(reactContext.getApplicationContext());
                 WritableMap params = Arguments.createMap();
                 // Log.i("isPlaying", Boolean.toString(isPlaying));
                 if (!isPlaying) {
                     isPlaying = true;
                     params.putBoolean("isPlaying", isPlaying);
+                    reactContext.getApplicationContext().startService(myIntentOn);
+                    HeadlessJsTaskService.acquireWakeLockNow(reactContext.getApplicationContext());
                     sendEvent(reactContext, "onPlayPauseClicked", params);
                 } else {
                     isPlaying = false;
+                    reactContext.getApplicationContext().startService(myIntentOff);
+                    HeadlessJsTaskService.acquireWakeLockNow(reactContext.getApplicationContext());
                     params.putBoolean("isPlaying", isPlaying);
                     sendEvent(reactContext, "onPlayPauseClicked", params);
                 }
@@ -102,6 +119,9 @@ public class FloatingModule extends ReactContextBaseJavaModule {
             @Override
             public void onNextClicked() {
                 // next track button clicked
+                reactContext.getApplicationContext().startService(myIntentRight);
+                HeadlessJsTaskService.acquireWakeLockNow(reactContext.getApplicationContext());
+
                 WritableMap params = Arguments.createMap();
                 sendEvent(reactContext, "onNextClicked", params);
             }
@@ -152,7 +172,30 @@ public class FloatingModule extends ReactContextBaseJavaModule {
 
     }
 
+    @ReactMethod
+    public void isShown(Callback callback) {
+        if (widget.isShown()) {
+            callback.invoke(true);
+        } else {
+            callback.invoke(false);
+        }
+    }
+
+    @ReactMethod
+    public void hide() {
+        widget.hide();
+    }
+
     private void sendEvent(ReactContext reactContext, String eventName, @Nullable WritableMap params) {
         reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);
     }
+
 }
+
+    
+
+    
+
+    
+
+    

@@ -31,4 +31,6 @@ target 'Shared' do
   pod 'RNGestureHandler', :path => '../node_modules/react-native-gesture-handler'
 
 
+  pod 'react-native-background-timer', :path => '../node_modules/react-native-background-timer'
+
 end

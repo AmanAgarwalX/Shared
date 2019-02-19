@@ -12,10 +12,17 @@ import {
 } from "react-native";
 import FileSystem from "react-native-filesystem";
 import firebase from "react-native-firebase";
+import { connect } from "react-redux";
 import CreateNewGroups from "./CreateNewGroups";
 import { createStackNavigator, createAppContainer } from "react-navigation";
 import Hamburger from "../Hamburger";
-export default class SharedGroupsScreen extends Component {
+class SharedGroupsScreen extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      groups: []
+    };
+  }
   static navigationOptions = ({ navigation }) => {
     return {
       title: "Shared Groups",
@@ -31,7 +38,10 @@ export default class SharedGroupsScreen extends Component {
       headerRight: (
         <Button
           title="Add New"
-          onPress={() => navigation.navigate("CreateNewGroups")}
+          onPress={() => {
+            functionname = navigation.getParam("navigateGroup");
+            functionname();
+          }}
         />
       ),
       headerTitleStyle: {
@@ -44,39 +54,36 @@ export default class SharedGroupsScreen extends Component {
       headerTintColor: "black"
     };
   };
-  constructor(props) {
-    super(props);
-    this.state = {
-      uid: null,
-      groups: []
-    };
-  }
-  createGroup = () => {
+  _navigateGroup = () => {
     this.props.navigation.navigate("CreateNewGroups");
   };
-  componentWillMount() {
-    this.doThings();
+  _alert() {
+    alert("Not Connected");
   }
-  doThings = async () => {
-    const uid = await this.readFile();
-    this.setState({ uid });
-  };
-  readFile = async () => {
-    const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
-    return new Promise(resolve => {
-      resolve(fileContents);
-    });
-  };
+  componentWillMount() {
+    firebase
+      .database()
+      .ref(".info/connected")
+      .on("value", snap => {
+        console.log(snap.val());
+        if (snap.val() === true) {
+          this.props.navigation.setParams({
+            navigateGroup: this._navigateGroup
+          });
+        } else {
+          this.props.navigation.setParams({ navigateGroup: this._alert });
+        }
+      });
+  }
   displayGroups = async () => {
-    this.setState({ groups: [] });
     await this.getGroups();
   };
   getGroups = async () => {
-    console.log(this.state.uid);
+    console.log(this.props.uid);
     var groups = [];
     return firebase
       .database()
-      .ref("/users/" + this.state.uid + "/groups/")
+      .ref("/users/" + this.props.uid + "/groups/")
       .on("child_added", snap => {
         firebase
           .database()
@@ -156,7 +163,7 @@ export default class SharedGroupsScreen extends Component {
                           .database()
                           .ref(
                             "/users/" +
-                              this.state.uid +
+                              this.props.uid +
                               "/groups/" +
                               group.val.key
                           )
@@ -169,8 +176,6 @@ export default class SharedGroupsScreen extends Component {
                               "Deleted Group",
                               ToastAndroid.SHORT
                             );
-                            this.setState({ groups: undefined });
-                            this.displayGroups();
                           });
                       }}
                     />
@@ -184,3 +189,12 @@ export default class SharedGroupsScreen extends Component {
     );
   }
 }
+function mapStateToProps(state) {
+  return {
+    test: state.test,
+    uid: state.uid
+  };
+}
+const ReduxSharedGroups = connect(mapStateToProps)(SharedGroupsScreen);
+
+export default ReduxSharedGroups;

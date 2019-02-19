@@ -15,15 +15,15 @@ import {
 } from "react-native";
 import FileSystem from "react-native-filesystem";
 import firebase from "react-native-firebase";
+import { connect } from "react-redux";
 import Hamburger from "../Hamburger";
 
 //CREATING GROUP AND EXPORTING IT
-export default class CreateNewGroups extends Component {
+class CreateNewGroups extends Component {
   //CONSTRUCTOR WITH ALL PROPS DEFINED
   constructor(props) {
     super(props);
     this.state = {
-      uid: null,
       usersNearby: [],
       userLast: [],
       latitudes: [],
@@ -95,7 +95,7 @@ export default class CreateNewGroups extends Component {
         "child_added",
         function(data) {
           console.log("calledone");
-          if (data.key != this.state.uid) {
+          if (data.key != this.props.uid) {
             console.log(data.val().gmail);
             console.log(data.val().latitude);
             var longi = data.val().longitude;
@@ -122,12 +122,10 @@ export default class CreateNewGroups extends Component {
       );
   };
   mountedComponent = async () => {
-    const uid = await this.readFile();
-    this.setState({ uid });
     navigator.geolocation.getCurrentPosition(position => {
       firebase
         .database()
-        .ref("/users/" + this.state.uid)
+        .ref("/users/" + this.props.uid)
         .update({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -140,7 +138,7 @@ export default class CreateNewGroups extends Component {
     });
     firebase
       .database()
-      .ref("/users/" + this.state.uid)
+      .ref("/users/" + this.props.uid)
       .once("value", data => {
         let email = data.val().gmail;
         this.setState({ email: email });
@@ -150,16 +148,19 @@ export default class CreateNewGroups extends Component {
   componentDidMount() {}
   //CALLED BEFORE COMPONENT IS MOUNTED
   componentWillMount() {
+    firebase
+      .database()
+      .ref(".info/connected")
+      .on("value", snap => {
+        console.log(snap.val());
+        if (snap.val() === false) {
+          this.props.navigation.goBack();
+          alert("Not Connected");
+        }
+      });
     this.props.navigation.setParams({ createGroup: this._createGroup });
     this.mountedComponent();
   }
-  //READS THE UID OF USER
-  readFile = async () => {
-    const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
-    return new Promise(resolve => {
-      resolve(fileContents);
-    });
-  };
   //RENDERS THE SEARCH RESULTS. CALLED BY THE MAIN RENDER FUNCTION
   SearchBar = () => {
     var searchUsers = [];
@@ -329,7 +330,7 @@ export default class CreateNewGroups extends Component {
                   key = key[key.length - 1];
                   firebase
                     .database()
-                    .ref("/users/" + this.state.uid + "/groups/" + key)
+                    .ref("/users/" + this.props.uid + "/groups/" + key)
                     .set(0);
                   firebase
                     .database()
@@ -341,7 +342,7 @@ export default class CreateNewGroups extends Component {
                         members: emails,
                         key: key,
                         nearUIDs: nearUIDs,
-                        adminUID: this.state.uid
+                        adminUID: this.props.uid
                       },
                       function(error) {
                         if (error) {
@@ -370,6 +371,16 @@ export default class CreateNewGroups extends Component {
     );
   }
 }
+
+function mapStateToProps(state) {
+  return {
+    test: state.test,
+    uid: state.uid
+  };
+}
+const ReduxCreateNewGroups = connect(mapStateToProps)(CreateNewGroups);
+
+export default ReduxCreateNewGroups;
 /*
 map(users => (
           <View style={{ flexDirection: "row" }}>

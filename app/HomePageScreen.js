@@ -15,13 +15,9 @@ import { connect } from "react-redux";
 import { initiate, show, togglepause, isShown, hide } from "./floating";
 import Hamburger from "../Hamburger";
 import firebase from "react-native-firebase";
-import SharedPics from "./SharedPics";
 import FileSystem from "react-native-filesystem";
-import SharedGroups from "./SharedGroups";
-import LoginPage from "./LoginPage";
-import Settings from "./Settings";
 import BackgroundTimer from "react-native-background-timer";
-import { createStackNavigator, createAppContainer } from "react-navigation";
+import { createStackNavigator } from "react-navigation";
 var isOn = false;
 var myuid;
 var intervalId;
@@ -179,7 +175,6 @@ class HomePageScreen extends Component {
     super(props);
     this.state = {
       shown: false,
-      uid: null,
       isOn: false,
       textContent: null
     };
@@ -189,13 +184,10 @@ class HomePageScreen extends Component {
     else {
       const uid = await this.readFile();
       this.props.setUID(uid);
-
-      this.setState({ uid });
     }
     await this.getGroups();
   };
   componentDidMount() {
-    this.requestFilePermission();
     initiate();
     this.getGroups();
     this.notificationListener = firebase
@@ -210,14 +202,14 @@ class HomePageScreen extends Component {
         console.log("done");
         firebase
           .database()
-          .ref("/users/" + this.state.uid)
+          .ref("/users/" + this.props.uid)
           .update({ token: fcmToken });
       });
   }
   getGroups = async () => {
     return firebase
       .database()
-      .ref("/users/" + this.state.uid + "/groups/")
+      .ref("/users/" + this.props.uid + "/groups/")
       .on("child_added", snap => {
         firebase
           .database()
@@ -239,7 +231,7 @@ class HomePageScreen extends Component {
     navigator.geolocation.getCurrentPosition(position => {
       firebase
         .database()
-        .ref("/users/" + this.state.uid)
+        .ref("/users/" + this.props.uid)
         .update({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -278,50 +270,6 @@ class HomePageScreen extends Component {
       resolve(fileContents);
     });
   };
-  requestFilePermission = async () => {
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        {
-          title: "File Access Permission",
-          message:
-            "Cool Photo App needs access to your camera " +
-            "so you can take awesome pictures.",
-          buttonNeutral: "Ask Me Later",
-          buttonNegative: "Cancel",
-          buttonPositive: "OK"
-        }
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log("You can use the camera");
-      } else {
-        console.log("Camera permission denied");
-      }
-    } catch (err) {
-      console.warn(err);
-    }
-    try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-        {
-          title: "Another File Access Permission",
-          message:
-            "Cool Photo App needs access to your camera " +
-            "so you can take awesome pictures.",
-          buttonNeutral: "Ask Me Later",
-          buttonNegative: "Cancel",
-          buttonPositive: "OK"
-        }
-      );
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        console.log("You can use the camera");
-      } else {
-        console.log("Camera permission denied");
-      }
-    } catch (err) {
-      console.warn(err);
-    }
-  };
   render() {
     return (
       <View>
@@ -329,7 +277,7 @@ class HomePageScreen extends Component {
         <Button
           title="Hi"
           onPress={() => {
-            alert(this.state.uid);
+            alert(this.props.uid);
           }}
         />
         <Button

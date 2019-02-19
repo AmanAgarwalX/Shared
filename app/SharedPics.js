@@ -15,6 +15,7 @@ import {
   ToastAndroid
 } from "react-native";
 import FileSystem from "react-native-filesystem";
+import { connect } from "react-redux";
 import firebase from "react-native-firebase";
 //import ImagePicker from "react-native-image-picker";
 import { createStackNavigator, createAppContainer } from "react-navigation";
@@ -89,8 +90,6 @@ class SharedPics extends Component {
   };*/
 
   mountedComponent = async () => {
-    const uid = await this.readFile();
-    this.setState({ uid });
     await this.getGroups();
   };
 
@@ -98,7 +97,7 @@ class SharedPics extends Component {
     let arr = [];
     return firebase
       .database()
-      .ref("/users/" + this.state.uid + "/groups/")
+      .ref("/users/" + this.props.uid + "/groups/")
       .on("child_added", snap => {
         firebase
           .database()
@@ -134,13 +133,6 @@ class SharedPics extends Component {
         //  groups.push(group);
       });
   };
-  readFile = async () => {
-    const fileContents = await FileSystem.readFile("my-directory/my-file.txt");
-    myuid = fileContents;
-    return new Promise(resolve => {
-      resolve(fileContents);
-    });
-  };
   componentWillMount() {
     this.mountedComponent();
   }
@@ -175,7 +167,7 @@ class SharedPics extends Component {
   render() {
     return (
       <View style={{ flex: 1 }}>
-        <Button title="Load Images" onPress={this._handleButtonPress} />
+        <Button title={this.props.uid} onPress={this._handleButtonPress} />
         <ScrollView>
           {this.state.pics.map((p, i) => {
             return (
@@ -289,9 +281,26 @@ class SharedPics extends Component {
     );
   }
 }
+function mapStateToProps(state) {
+  return {
+    test: state.test,
+    uid: state.uid
+  };
+}
+function mapDispatchToProps(dispatch) {
+  return {
+    increaseTest: () => dispatch({ type: "INCREASE_TEST" }),
+    setUID: uid => dispatch({ type: "SET_UID", uid })
+  };
+}
+const ReduxSharedPics = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(SharedPics);
+
 const SharedPicsNavigator = createStackNavigator(
   {
-    SharedPics: { screen: SharedPics }
+    SharedPics: { screen: ReduxSharedPics }
   },
   { initialRouteName: "SharedPics" }
 );

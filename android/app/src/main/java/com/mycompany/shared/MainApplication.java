@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Application;
 import com.floatingwidget.floating.FloatingPackage;
 import com.facebook.react.ReactApplication;
+import com.ocetnik.timer.BackgroundTimerPackage;
 //import ce.go.dai.RNAudioFloatingWidgetPackage;
 import com.benwixen.rnfilesystem.RNFileSystemPackage;
 
@@ -46,7 +47,8 @@ public class MainApplication extends Application implements ReactApplication {
     @SuppressLint("MissingPermission")
     @Override
     protected List<ReactPackage> getPackages() {
-      return Arrays.asList(new MainReactPackage(), /* new RNAudioFloatingWidgetPackage(), */ new RNFileSystemPackage(),
+      return Arrays.asList(new MainReactPackage(),
+            new BackgroundTimerPackage(), /* new RNAudioFloatingWidgetPackage(), */ new RNFileSystemPackage(),
           new RNGestureHandlerPackage(), new RNGoogleSigninPackage(), new RNFirebasePackage(), new FloatingPackage(),
           // add/remove these packages as appropriate
           new RNFirebaseAdMobPackage(), new RNFirebaseAnalyticsPackage(), new RNFirebaseAuthPackage(),
