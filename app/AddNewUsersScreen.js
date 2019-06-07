@@ -1,19 +1,23 @@
 //IMPORTS
 import React, { Component } from "react";
 import {
-  //Text,
+  AppRegistry,
+  StyleSheet,
+  // Text,
   View,
-  //  Button,
+  Alert,
+  // Button,
   TextInput,
-  ToastAndroid,
-  FlatList,
+  CheckBox,
+  Modal,
   TouchableOpacity,
-  StyleSheet
+  ToastAndroid,
+  FlatList
 } from "react-native";
-import Dialog from "react-native-dialog";
 import io from "socket.io-client/dist/socket.io";
 import firebase from "react-native-firebase";
 import { connect } from "react-redux";
+import Dialog from "react-native-dialog";
 import {
   Button,
   List,
@@ -23,7 +27,8 @@ import {
   Colors
 } from "react-native-paper";
 
-class CreateNewGroups extends Component {
+//CREATING GROUP AND EXPORTING IT
+class AddNewUsersScreen extends Component {
   constructor(props) {
     super(props);
     this.selectflag = true;
@@ -42,10 +47,10 @@ class CreateNewGroups extends Component {
 
   static navigationOptions = ({ navigation }) => {
     return {
-      title: "Create New Groups",
+      title: "Add to Group",
       headerRight: (
-        <Button onPress={navigation.getParam("createGroup")} color="#4f5d73">
-          Create
+        <Button color="#4f5d73" onPress={navigation.getParam("createGroup")}>
+          Add
         </Button>
       ),
       headerTitleStyle: {
@@ -67,6 +72,7 @@ class CreateNewGroups extends Component {
       ToastAndroid.show("No members selected", ToastAndroid.SHORT);
     else this.setState({ groupMembers: group, modalVisible: true });
   };
+
   msToTime = s => {
     var ms = s % 1000;
     s = (s - ms) / 1000;
@@ -97,10 +103,24 @@ class CreateNewGroups extends Component {
 
     if (resp.status != 422)
       resp.json().then(users => {
+        console.log("all", users);
+        new_users = [];
         for (user of users) {
-          user["checked"] = false;
+          flag = 0;
+          for (old of this.group.members) {
+            if (old.id === user.user_id) {
+              flag = 1;
+              break;
+            }
+          }
+          if (flag === 0) {
+            user["checked"] = false;
+            new_users.push(user);
+          }
         }
-        this.setState({ usersNearby: users });
+        console.log(new_users);
+
+        this.setState({ usersNearby: new_users });
         this.socket = io("http://13.234.165.94/nearby/" + this.props.uid, {
           reconnection: true,
           reconnectionDelay: 500,
@@ -114,11 +134,28 @@ class CreateNewGroups extends Component {
         this.socket.on("disconnect", () => {
           console.log("disconnected");
         });
-        this.socket.on("my response2", async new_users => {
+        this.socket.on("my response2", async users => {
+          console.log("all", users);
+          new_users = [];
+          for (user of users) {
+            flag = 0;
+            for (old of this.group.members) {
+              if (old.id === user.user_id) {
+                flag = 1;
+                break;
+              }
+            }
+            if (flag === 0) {
+              user["checked"] = false;
+              new_users.push(user);
+            }
+          }
+          console.log(new_users);
           for (new_user of new_users) {
             flag = 0;
             for (user of this.state.usersNearby) {
               if (new_user.user_id === user.user_id) {
+                console.log("found", new_user.user_id);
                 new_user["checked"] = user.checked;
                 flag = 1;
                 break;
@@ -126,7 +163,6 @@ class CreateNewGroups extends Component {
             }
             if (flag === 0) new_user["checked"] = false;
           }
-
           for (user of this.state.usersNearby) {
             flag = 0;
             for (new_user of new_users) {
@@ -137,7 +173,6 @@ class CreateNewGroups extends Component {
             }
             if (flag === 0) new_users.push(user);
           }
-
           console.log("uploaaaaded", new_users);
           await this.setState({ usersNearby: new_users });
           console.log("now", this.state.usersNearby);
@@ -148,6 +183,11 @@ class CreateNewGroups extends Component {
     }
   };
   mountedComponent = async () => {
+    const { navigation } = this.props;
+    this.groupkey = navigation.getParam("key", "some default value");
+    this.uid = navigation.getParam("uid", "some default value");
+    this.group = navigation.getParam("group", "some default value");
+    console.log("major", this.group);
     navigator.geolocation.getCurrentPosition(position => {
       this.setState(
         {
@@ -227,20 +267,24 @@ class CreateNewGroups extends Component {
               );
               if (resp.status === 200)
                 resp.json().then(async user => {
-                  console.log(this.props.user);
-                  if (this.props.user.gmail != user.user_email) {
+                  console.log(user);
+                  flag = 0;
+                  for (old of this.group.members) {
+                    if (old.id === user.user_id) {
+                      flag = 1;
+                      break;
+                    }
+                  }
+                  if (flag === 0 && this.props.user.gmail != user.user_email) {
                     user["checked"] = false;
                     usersNearby = this.state.usersNearby;
                     usersNearby.unshift(user);
-                    //this.setState({ usersNearby: user });
                     await this.setState({
                       usersNearby
                     });
 
-                    ToastAndroid.show("User found!", ToastAndroid.SHORT);
                     this.textInput.clear();
                     this.setState({ searchText: "" });
-                    // this.setState({ usersNearby: user });
                   } else {
                     this.setState({ flag: false });
                     //Not found condition here
@@ -273,8 +317,7 @@ class CreateNewGroups extends Component {
                     fontWeight: "bold"
                   }}
                 >
-                  Not found. Please input email id and search using the Search
-                  button.
+                  Not found. Please input email ID and press the Search button
                 </Text>
               ) : (
                 <Text
@@ -355,6 +398,7 @@ class CreateNewGroups extends Component {
             }}
           />
         )}
+
         {this.state.usersNearby.length > 0 && (
           <Button
             mode="outlined"
@@ -438,12 +482,7 @@ class CreateNewGroups extends Component {
           </Text>
         )}
         <Dialog.Container visible={this.state.modalVisible} {...extraProps}>
-          <Dialog.Title>Enter Group</Dialog.Title>
-          <Dialog.Input
-            placeholder="Enter name here"
-            label="Group Name"
-            onChangeText={groupName => (this.groupName = groupName)}
-          />
+          <Dialog.Title>Are you sure?</Dialog.Title>
           <Dialog.Button
             label="Cancel"
             onPress={() => {
@@ -453,52 +492,32 @@ class CreateNewGroups extends Component {
           <Dialog.Button
             label="Okay"
             onPress={() => {
-              if (this.groupName) {
-                console.log(
-                  this.props.uid,
-                  this.groupName,
-                  this.state.groupMembers
-                );
-                fetch("http://13.234.165.94/group/add", {
-                  method: "POST",
-                  headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + String(this.props.access_token)
-                  },
-                  body: JSON.stringify({
-                    id: this.props.uid,
-                    name: this.groupName,
-                    member_ids: this.state.groupMembers
-                  })
-                }).then(res => {
-                  console.log(res);
-                  if (res.status === 200) {
-                    // this.props.updateSharingWith({})
-                    res.json().then(ans => {
-                      g_id = ans["message"];
-                      this.props.updateSharingWith({
-                        id: g_id,
-                        name: this.groupName
-                      });
-                    });
-                    ToastAndroid.show(
-                      "Group Created Successfully",
-                      ToastAndroid.SHORT
-                    );
-                    this.setState({
-                      modalVisible: !this.state.modalVisible
-                    });
-                    this.props.navigation.goBack();
-                  } else
-                    ToastAndroid.show(
-                      "Couldn't create group",
-                      ToastAndroid.SHORT
-                    );
-                });
-              } else {
-                ToastAndroid.show("Please write name", ToastAndroid.SHORT);
-              }
+              console.log(this.props.uid, this.state.groupMembers);
+              fetch("http://13.234.165.94/group/add_members", {
+                method: "POST",
+                headers: {
+                  Accept: "application/json",
+                  "Content-Type": "application/json",
+                  Authorization: "Bearer " + String(this.props.access_token)
+                },
+                body: JSON.stringify({
+                  group_id: this.groupkey,
+                  member_ids: this.state.groupMembers
+                })
+              }).then(res => {
+                console.log(res);
+                if (res.status === 200) {
+                  ToastAndroid.show("Added Successfully", ToastAndroid.SHORT);
+                  this.setState({
+                    modalVisible: !this.state.modalVisible
+                  });
+                  this.props.navigation.goBack();
+                } else
+                  ToastAndroid.show(
+                    "Couldn't create group",
+                    ToastAndroid.SHORT
+                  );
+              });
             }}
           />
         </Dialog.Container>
@@ -506,6 +525,7 @@ class CreateNewGroups extends Component {
     );
   }
 }
+
 function mapStateToProps(state) {
   return {
     test: state.test,
@@ -514,19 +534,6 @@ function mapStateToProps(state) {
     access_token: state.access_token
   };
 }
+const ReduxAddNewUsersScreen = connect(mapStateToProps)(AddNewUsersScreen);
 
-function mapDispatchToProps(dispatch) {
-  return {
-    increaseTest: () => dispatch({ type: "INCREASE_TEST" }),
-    setUID: uid => dispatch({ type: "SET_UID", uid }),
-    updateGroups: groups => dispatch({ type: "UPDATE_GROUPS", groups }),
-    updateSharingWith: sharing_with =>
-      dispatch({ type: "UPDATE_SHARING_WITH", sharing_with })
-  };
-}
-const ReduxCreateNewGroups = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(CreateNewGroups);
-
-export default ReduxCreateNewGroups;
+export default ReduxAddNewUsersScreen;

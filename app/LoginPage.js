@@ -1,13 +1,16 @@
 import React, { Component } from "react";
 import {
   StyleSheet,
-  Text,
+  //Text,
   View,
+  Image,
   Alert,
   Button,
+  ToastAndroid,
   Modal,
   TouchableHighlight,
-  TextInput
+  TextInput,
+  ActivityIndicator
 } from "react-native";
 import {
   GoogleSignin,
@@ -15,10 +18,10 @@ import {
   statusCodes
 } from "react-native-google-signin";
 import { connect } from "react-redux";
+import { Text } from "react-native-paper";
 import { StackActions, NavigationActions } from "react-navigation";
 import firebase from "react-native-firebase";
 import config from "../config";
-import FileSystem from "react-native-filesystem";
 class LoginPage extends Component {
   constructor(props) {
     super(props);
@@ -28,7 +31,9 @@ class LoginPage extends Component {
       isNew: null,
       modalVisible: false,
       userId: null,
-      uid: null
+      uid: null,
+      visible: true,
+      userVisible: false
     };
   }
 
@@ -43,38 +48,54 @@ class LoginPage extends Component {
       offlineAccess: false
     });
   }
-  async writeToFile(uid) {
-    const fileContents = uid;
-    await FileSystem.writeToFile("my-directory/my-file.txt", fileContents);
-    Alert.alert("file is written");
-  }
-  /* async _getCurrentUser() {
-    try {
-      const userInfo = await GoogleSignin.signInSilently();
-      this.setState({ userInfo, error: null });
-    } catch (error) {
-      const errorMessage =
-        error.code === statusCodes.SIGN_IN_REQUIRED
-          ? "Please sign in :)"
-          : error.message;
-      this.setState({
-        error: new Error(errorMessage)
-      });
-    }
-  }*/
   setModalVisible(visible) {
     this.setState({ modalVisible: visible });
   }
-  render() {
-    console.log(this.props.uid);
-    const { userInfo } = this.state;
-    const { isNew } = this.state;
-    const body = /*userInfo
-      ? this.renderUserInfo(userInfo)
-      :*/ this.renderSignInButton();
+  renderActivity = () => {
     return (
-      <View style={[styles.container, { flex: 1 }]}>
-        {body}
+      <View>
+        <ActivityIndicator size="large" color="#00ff00" animating={true} />
+      </View>
+    );
+  };
+  render() {
+    const body = this.renderSignInButton();
+    const activity = this.renderActivity();
+    return (
+      <View
+        style={[
+          {
+            flex: 1,
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: 10,
+            backgroundColor: "#e0e0d1"
+          }
+        ]}
+      >
+        <View
+          style={{
+            flex: 0.7,
+            backgroundColor: "#e0e0d1",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <Image
+            source={require("./ic_launcher.png")}
+            style={{ height: 150, width: 150 }}
+          />
+          <Text
+            style={{
+              fontSize: 25,
+              margin: 10,
+              color: "#c75c5c"
+            }}
+          >
+            Welcome to Shared
+          </Text>
+        </View>
+        {this.state.visible ? body : activity}
         <Modal
           animationType="slide"
           transparent={false}
@@ -88,57 +109,77 @@ class LoginPage extends Component {
               alignItems: "center"
             }}
           >
-            <Text>Please Input UserName</Text>
+            <Text>Please Input Your User Name</Text>
             <TextInput
               style={{ borderColor: "black", width: "100%" }}
-              placeholder="Type here to translate!"
+              placeholder="User Name. Try and make it unique!"
               onChangeText={userId => this.setState({ userId })}
             />
             <View>
-              <TouchableHighlight
-                onPress={() => {
-                  this.setModalVisible(!this.state.modalVisible);
-                  this.setUserID();
-                }}
-              >
-                <Text>Set User ID</Text>
-              </TouchableHighlight>
+              {!this.state.userVisible ? (
+                <TouchableHighlight
+                  onPress={async () => {
+                    this.setState({ userVisible: true });
+                    await fetch("http://13.234.165.94/user/user_id", {
+                      method: "POST",
+                      headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                        Authorization:
+                          "Bearer " + String(this.props.access_token)
+                      },
+                      body: JSON.stringify({
+                        id: this.props.uid,
+                        user_id: this.state.userId
+                      })
+                    }).then(async res => {
+                      console.log(res.status);
+                      if (res.status === 200) {
+                        this.userInfoSet["user_name"] = this.state.userId;
+                        await this.props.setUserInfo(this.userInfoSet);
+                        this.setModalVisible(!this.state.modalVisible);
+
+                        this.isSignedIn(this.state.uid);
+                      } else if (res.status === 402) {
+                        this.setState({ userVisible: false });
+                        ToastAndroid.show(
+                          "Id already in use",
+                          ToastAndroid.SHORT
+                        );
+                      }
+                    });
+                  }}
+                >
+                  <Text>Set User ID</Text>
+                </TouchableHighlight>
+              ) : (
+                <ActivityIndicator
+                  size="large"
+                  color="#00ff00"
+                  animating={true}
+                />
+              )}
             </View>
           </View>
         </Modal>
-        <Text>{this.props.test}</Text>
-        <Button title="increase" onPress={() => this.props.increaseTest()} />
       </View>
     );
   }
-  setUserID = async () => {
-    firebase
-      .database()
-      .ref("/users/" + this.state.uid)
-      .update({ userId: this.state.userId });
-    this.isSignedIn(this.state.uid);
-  };
-  /* renderUserInfo(userInfo) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 20 }}>
-          Welcome {userInfo.user.name}
-        </Text>
-        <Text>Your user info: {JSON.stringify(userInfo.user)}</Text>
-
-        <Button onPress={this._signOut} title="Log out" />
-        {this.renderError()}
-      </View>
-    );
-  }
-*/
   renderSignInButton() {
     return (
-      <View style={styles.container}>
+      <View
+        style={{
+          flex: 0.3,
+          backgroundColor: "#4f5d73",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 25
+        }}
+      >
         <GoogleSigninButton
-          style={{ width: 212, height: 48 }}
-          size={GoogleSigninButton.Size.Standard}
-          color={GoogleSigninButton.Color.Auto}
+          style={{ width: 192, height: 48 }}
+          size={GoogleSigninButton.Size.Wide}
+          color={GoogleSigninButton.Color.Dark}
           onPress={this._signIn}
         />
         {this.renderError()}
@@ -154,10 +195,26 @@ class LoginPage extends Component {
     const text = `${error.toString()} ${error.code ? error.code : ""}`;
     return <Text>{text}</Text>;
   }
-  isSignedIn = async UIDGIVEN => {
+  isSignedIn = async () => {
     const isSignedIn = await GoogleSignin.isSignedIn();
-
-    this.writeToFile(UIDGIVEN);
+    navigator.geolocation.getCurrentPosition(position => {
+      fetch("http://13.234.165.94/user/location", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + String(this.props.access_token)
+        },
+        body: JSON.stringify({
+          id: this.props.uid,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          last_seen: Date.now()
+        })
+      }).then(res => {
+        console.log(res.status);
+      });
+    });
     if (isSignedIn) {
       const resetAction = StackActions.reset({
         index: 0,
@@ -169,115 +226,91 @@ class LoginPage extends Component {
 
   _signIn = async () => {
     try {
-      // add any configuration settings here:
-      await GoogleSignin.configure();
-
+      this.setState({ visible: false });
+      let ans = await GoogleSignin.configure();
+      console.log(ans);
       const data = await GoogleSignin.signIn();
-
-      // create a new firebase credential with the token
+      console.log(data);
       const credential = firebase.auth.GoogleAuthProvider.credential(
         data.idToken,
         data.accessToken
       );
-      // login with credential
+      console.log(credential);
       const firebaseUserCredential = await firebase
         .auth()
         .signInWithCredential(credential);
+      console.log("4");
       let uid = firebaseUserCredential.user.uid;
-      this.props.setUID(uid);
+      await this.props.setUID(uid);
+      console.log("5");
+      const user = {
+        gmail: firebaseUserCredential.user.email,
+        profile_picture:
+          firebaseUserCredential.additionalUserInfo.profile.picture,
+        name: firebaseUserCredential.additionalUserInfo.profile.name
+      };
+      this.userInfoSet = user;
+      console.log("6");
       if (firebaseUserCredential.additionalUserInfo.isNewUser) {
-        //Wait for UserId, then add new user and then send to homepage
         this.setState({
           isNew: true,
           modalVisible: true,
           uid: firebaseUserCredential.user.uid
         });
 
-        firebase
-          .messaging()
-          .getToken()
-          .then(fcmToken => {
-            if (fcmToken) {
-              // user has a device token
-              firebase
-                .database()
-                .ref("/users/" + firebaseUserCredential.user.uid)
-                .set({
-                  gmail: firebaseUserCredential.user.email,
-                  profile_picture:
-                    firebaseUserCredential.additionalUserInfo.profile.picture,
-                  locale:
-                    firebaseUserCredential.additionalUserInfo.profile.locale,
-                  name: firebaseUserCredential.additionalUserInfo.profile.name,
-                  created_at: Date.now(),
-                  userId: this.state.userId,
-                  token: fcmToken,
-                  sharing_with: 0
-                });
-            } else {
-              // user doesn't have a device token yet
-              firebase
-                .database()
-                .ref("/users/" + firebaseUserCredential.user.uid)
-                .set({
-                  gmail: firebaseUserCredential.user.email,
-                  profile_picture:
-                    firebaseUserCredential.additionalUserInfo.profile.picture,
-                  locale:
-                    firebaseUserCredential.additionalUserInfo.profile.locale,
-                  name: firebaseUserCredential.additionalUserInfo.profile.name,
-                  created_at: Date.now(),
-                  userId: this.state.userId,
-                  token: null,
-                  sharing_with: 0
-                });
-            }
-          });
-      } else {
-        //Update and Login Normally
-        firebase
-          .messaging()
-          .getToken()
-          .then(fcmToken => {
-            firebase
-              .database()
-              .ref("/users/" + firebaseUserCredential.user.uid)
-              .update({ token: fcmToken, last_logged_in: Date.now() });
-          });
-        this.isSignedIn(firebaseUserCredential.user.uid);
-      }
-
-      /*
-      if (firebaseUserCredential.additionalUserInfo.isNewUser) {
-        this.setState({ isNew: true, modalVisible: true });
-        firebase
-          .database()
-          .ref("/users/" + firebaseUserCredential.user.uid)
-          .set({
-            gmail: firebaseUserCredential.user.email,
-            profile_picture:
-              firebaseUserCredential.additionalUserInfo.profile.picture,
-            locale: firebaseUserCredential.additionalUserInfo.profile.locale,
+        const fcmToken = await firebase.messaging().getToken();
+        const new_data = await fetch("http://13.234.165.94/user", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email: firebaseUserCredential.user.email,
             name: firebaseUserCredential.additionalUserInfo.profile.name,
-            created_at: Date.now()
-          });
+            id: firebaseUserCredential.user.uid,
+            token: fcmToken,
+            sharing_with: 0,
+            password: firebaseUserCredential.user.uid
+          })
+        });
+        await new_data.json().then(async hi => {
+          console.log("newnew", hi);
+          await this.props.setAccessToken(hi["access_token"]);
+          console.log("Done that too");
+        });
       } else {
-        this.setState({ isNew: false });
-        firebase
-          .database()
-          .ref("/users/" + firebaseUserCredential.user.uid)
-          .update({ last_logged_in: Date.now() });
+        const fcmToken = await firebase.messaging().getToken();
+        console.log("hihi hi", fcmToken);
+        let new_data = await fetch("http://13.234.165.94/user", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            email: firebaseUserCredential.user.email,
+            name: firebaseUserCredential.additionalUserInfo.profile.name,
+            id: firebaseUserCredential.user.uid,
+            token: fcmToken,
+            sharing_with: 0,
+            password: firebaseUserCredential.user.uid
+          })
+        });
+        await new_data.json().then(async hi => {
+          console.log("newnew", hi);
+          await this.props.setAccessToken(hi["access_token"]);
+          this.userInfoSet["user_name"] = hi["user_id_name"];
+          await this.props.setUserInfo(this.userInfoSet);
+          console.log("Done that too");
+          this.isSignedIn();
+        });
       }
-      this.setState({ userInfo: data, error: null });
-      this.writeToFile(firebaseUserCredential.user.uid);
-      console.warn(JSON.stringify(firebaseUserCredential.user.toJSON()));
-      if (!this.state.isNew) this.isSignedIn(firebaseUserCredential.user.uid);*/
     } catch (error) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // sign in was cancelled
         Alert.alert("cancelled");
+        this.setState({ visible: true });
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        // operation in progress already
         Alert.alert("in progress");
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert("play services not available or outdated");
@@ -289,30 +322,22 @@ class LoginPage extends Component {
       }
     }
   };
-
-  _signOut = async () => {
-    try {
-      await GoogleSignin.revokeAccess();
-      await GoogleSignin.signOut();
-
-      this.setState({ userInfo: null, error: null });
-    } catch (error) {
-      this.setState({
-        error
-      });
-    }
-  };
 }
 function mapStateToProps(state) {
   return {
     test: state.test,
-    uid: state.uid
+    uid: state.uid,
+    access_token: state.access_token,
+    user: state.user
   };
 }
 function mapDispatchToProps(dispatch) {
   return {
     increaseTest: () => dispatch({ type: "INCREASE_TEST" }),
-    setUID: uid => dispatch({ type: "SET_UID", uid })
+    setUID: uid => dispatch({ type: "SET_UID", uid }),
+    setAccessToken: access_token =>
+      dispatch({ type: "SET_ACCESS_TOKEN", access_token }),
+    setUserInfo: user => dispatch({ type: "SET_USER_INFO", user })
   };
 }
 export default connect(

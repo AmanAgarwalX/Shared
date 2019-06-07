@@ -3,6 +3,7 @@ package com.mycompany.shared;
 import android.content.Context;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import org.devio.rn.splashscreen.SplashScreen;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -41,8 +42,8 @@ public class MainActivity extends ReactActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen.show(this); 
         super.onCreate(savedInstanceState);
-
         Context context = this;
         AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
         builder1.setMessage("We need your permission for displaying the widget");

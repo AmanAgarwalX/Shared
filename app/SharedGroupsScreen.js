@@ -5,55 +5,27 @@ import {
   Text,
   View,
   Alert,
-  Button,
   ScrollView,
   Modal,
+  FlatList,
   ToastAndroid
 } from "react-native";
-import FileSystem from "react-native-filesystem";
 import firebase from "react-native-firebase";
 import { connect } from "react-redux";
+import { FAB, List, Button } from "react-native-paper";
 import CreateNewGroups from "./CreateNewGroups";
 import { createStackNavigator, createAppContainer } from "react-navigation";
-import Hamburger from "../Hamburger";
 class SharedGroupsScreen extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      groups: []
+      groups: {},
+      grouparr: [],
+      modalVisible: false,
+      modal: undefined
     };
   }
-  static navigationOptions = ({ navigation }) => {
-    return {
-      title: "Shared Groups",
-      headerLeft: (
-        <Hamburger
-          type="arrow"
-          color="blue"
-          onPress={() => {
-            navigation.openDrawer();
-          }}
-        />
-      ),
-      headerRight: (
-        <Button
-          title="Add New"
-          onPress={() => {
-            functionname = navigation.getParam("navigateGroup");
-            functionname();
-          }}
-        />
-      ),
-      headerTitleStyle: {
-        textAlign: "center",
-        flex: 1
-      },
-      headerStyle: {
-        backgroundColor: "white"
-      },
-      headerTintColor: "black"
-    };
-  };
+  static navigationOptions = { header: null };
   _navigateGroup = () => {
     this.props.navigation.navigate("CreateNewGroups");
   };
@@ -61,6 +33,9 @@ class SharedGroupsScreen extends Component {
     alert("Not Connected");
   }
   componentWillMount() {
+    //this.getGroups();
+    // setInterval(() => console.log(this.state.modal), 1000);
+    /*
     firebase
       .database()
       .ref(".info/connected")
@@ -73,128 +48,128 @@ class SharedGroupsScreen extends Component {
         } else {
           this.props.navigation.setParams({ navigateGroup: this._alert });
         }
-      });
+      });*/
   }
-  displayGroups = async () => {
-    await this.getGroups();
-  };
-  getGroups = async () => {
+  /* getGroups = async () => {
     console.log(this.props.uid);
-    var groups = [];
-    return firebase
+    let group = {};
+    firebase
       .database()
       .ref("/users/" + this.props.uid + "/groups/")
-      .on("child_added", snap => {
-        firebase
-          .database()
-          .ref("/groups/")
-          .child(snap.key)
-          .on("value", childSnap => {
-            console.log("1", childSnap.val());
-            let val = childSnap.val();
-            groups = groups.concat({ val, visible: false });
-            console.log(groups);
-            this.setState({ groups });
-          });
-        //  groups.push(group);
+      .on("value", snap => {
+        group = {};
+        let groups = undefined;
+        this.setState({ group: undefined, grouparr: undefined });
+        groups = snap.val();
+        for (var groupkey in groups) {
+          console.log(groupkey);
+          firebase
+            .database()
+            .ref("/groups/" + groupkey)
+            .on("value", snap => {
+              let val = snap.val();
+              let keygroup = val.key;
+              // console.log(keygroup);
+              let pair = { [keygroup]: val };
+              group = { ...group, ...pair };
+              let grouparr = Object.keys(group).map(function(key) {
+                return group[key];
+              });
+              console.log("hi", keygroup, group, grouparr);
+              this.setState({ group: group, grouparr: grouparr });
+            });
+        }
       });
-  };
+  };*/
   render() {
     return (
-      <ScrollView style={{ flex: 1 }}>
-        <Text>groups</Text>
-        {this.state.groups != undefined &&
-          this.state.groups.map((group, index) => {
-            return (
-              <View style={{ flexDirection: "row" }}>
-                <Text
-                  style={{ marginTop: 5 }}
+      <View style={{ flex: 1 }}>
+        {this.props.groups && (
+          <FlatList
+            data={this.props.groups}
+            extraData={this.props.sharing_with}
+            renderItem={({ item, index }) => {
+              //      console.log("hi", item);
+              return (
+                <List.Item
+                  title={item.name}
                   onPress={() => {
-                    let temp = this.state.groups;
-                    temp[index].visible = true;
-                    this.setState({ groups: temp });
-                    console.log(group.val.name);
+                    let key = item.id;
+                    this.props.navigation.navigate("ViewGroupPicsScreen", {
+                      key: key,
+                      uid: this.props.uid,
+                      name: item.name
+                    });
                   }}
-                >
-                  {" "}
-                  {group.val.name}
-                  {`\n`}
-                </Text>
-                <Modal
-                  animationType="slide"
-                  transparent={false}
-                  visible={this.state.groups[index].visible}
-                  onRequestClose={() => {
-                    let temp = this.state.groups;
-                    temp[index].visible = false;
-                    this.setState({ groups: temp });
+                  right={() => {
+                    if (item.id === this.props.sharing_with.id)
+                      return (
+                        <Button mode="contained" disabled>
+                          Selected
+                        </Button>
+                      );
+                    else
+                      return (
+                        <Button
+                          onPress={() => {
+                            this.props.updateSharingWith({
+                              id: item.id,
+                              name: item.name
+                            });
+                          }}
+                        >
+                          Select
+                        </Button>
+                      );
                   }}
-                >
-                  <View
-                    style={{
-                      flex: 1,
-                      alignContent: "center",
-                      justifyContent: "center",
-                      fontSize: 20
-                    }}
-                  >
-                    <Text>
-                      Group Name:
-                      {`\n`}
-                      {group.val.name}
-                      {`\n`}
-                    </Text>
-                    <Text>
-                      Group Admin:
-                      {`\n`}
-                      {group.val.admin}
-                      {`\n`}
-                    </Text>
-                    <Text>
-                      Group Members:
-                      {`\n`}
-                      {group.val.members}
-                      {`\n`}
-                    </Text>
-                    <Button
-                      title="Delete Group"
-                      onPress={() => {
-                        firebase
-                          .database()
-                          .ref(
-                            "/users/" +
-                              this.props.uid +
-                              "/groups/" +
-                              group.val.key
-                          )
-                          .set(null)
-                          .then(() => {
-                            let temp = this.state.groups;
-                            temp[index].visible = false;
-                            this.setState({ groups: temp });
-                            ToastAndroid.show(
-                              "Deleted Group",
-                              ToastAndroid.SHORT
-                            );
-                          });
-                      }}
-                    />
-                  </View>
-                </Modal>
-              </View>
-            );
-          })}
-        <Button title="Get Groups" onPress={this.displayGroups} />
-      </ScrollView>
+                  style={{ backgroundColor: "#e0e0d1", marginBottom: 1 }}
+                  //  description="Item description"
+                  //    left={props => <List.Icon {...props} icon="folder" />}
+                />
+              );
+            }}
+          />
+        )}
+        <FAB
+          style={styles.fab}
+          icon="add"
+          disabled={false}
+          onPress={() => {
+            this.props.navigation.navigate("CreateNewGroups");
+          }}
+        />
+      </View>
     );
   }
 }
+const styles = StyleSheet.create({
+  fab: {
+    position: "absolute",
+    margin: 16,
+    right: 0,
+    bottom: 0
+  }
+});
 function mapStateToProps(state) {
   return {
     test: state.test,
-    uid: state.uid
+    uid: state.uid,
+    groups: state.groups,
+    sharing_with: state.sharing_with
   };
 }
-const ReduxSharedGroups = connect(mapStateToProps)(SharedGroupsScreen);
+function mapDispatchToProps(dispatch) {
+  return {
+    increaseTest: () => dispatch({ type: "INCREASE_TEST" }),
+    setUID: uid => dispatch({ type: "SET_UID", uid }),
+    updateGroups: groups => dispatch({ type: "UPDATE_GROUPS", groups }),
+    updateSharingWith: sharing_with =>
+      dispatch({ type: "UPDATE_SHARING_WITH", sharing_with })
+  };
+}
+const ReduxSharedGroups = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(SharedGroupsScreen);
 
 export default ReduxSharedGroups;

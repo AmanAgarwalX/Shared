@@ -6,6 +6,8 @@ import com.mycompany.shared.service.onoffservice;
 import com.mycompany.shared.service.offservice;
 import com.mycompany.shared.service.leftservice;
 import com.mycompany.shared.service.rightservice;
+import com.mycompany.shared.service.groupnameservice;
+import com.mycompany.shared.service.setlocationservice;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -69,20 +71,23 @@ public class FloatingModule extends ReactContextBaseJavaModule {
         // media buttons' click listener
 
         widget.controller().onControlsClickListener(new AudioWidget.OnControlsClickListener() {
+            Intent myIntentOn = new Intent(reactContext.getApplicationContext(), onoffservice.class);
+            Intent myIntentOff = new Intent(reactContext.getApplicationContext(), offservice.class);
+            Intent myIntentLeft = new Intent(reactContext.getApplicationContext(), leftservice.class);
+            Intent myIntentRight = new Intent(reactContext.getApplicationContext(), rightservice.class);
+            Intent myIntentSetLocation = new Intent(reactContext.getApplicationContext(), setlocationservice.class);
+            Intent myIntentGroupName = new Intent(reactContext.getApplicationContext(), groupnameservice.class);
 
             @Override
             public boolean onPlaylistClicked() {
                 // playlist icon clicked
                 // return false to collapse widget, true to stay in expanded state
+                reactContext.getApplicationContext().startService(myIntentSetLocation);
+                HeadlessJsTaskService.acquireWakeLockNow(reactContext.getApplicationContext());
                 WritableMap params = Arguments.createMap();
                 sendEvent(reactContext, "onPlaylistClicked", params);
                 return true;
             }
-
-            Intent myIntentOn = new Intent(reactContext.getApplicationContext(), onoffservice.class);
-            Intent myIntentOff = new Intent(reactContext.getApplicationContext(), offservice.class);
-            Intent myIntentLeft = new Intent(reactContext.getApplicationContext(), leftservice.class);
-            Intent myIntentRight = new Intent(reactContext.getApplicationContext(), rightservice.class);
 
             @Override
             public void onPreviousClicked() {
@@ -131,6 +136,8 @@ public class FloatingModule extends ReactContextBaseJavaModule {
                 // album cover clicked
                 WritableMap params = Arguments.createMap();
                 sendEvent(reactContext, "onAlbumClicked", params);
+                reactContext.getApplicationContext().startService(myIntentGroupName);
+                HeadlessJsTaskService.acquireWakeLockNow(reactContext.getApplicationContext());
             }
 
             @Override
@@ -182,6 +189,15 @@ public class FloatingModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void isPlaying(Callback callback) {
+        if (isPlaying) {
+            callback.invoke(true);
+        } else {
+            callback.invoke(false);
+        }
+    }
+
+    @ReactMethod
     public void hide() {
         widget.hide();
     }
@@ -191,11 +207,3 @@ public class FloatingModule extends ReactContextBaseJavaModule {
     }
 
 }
-
-    
-
-    
-
-    
-
-    
